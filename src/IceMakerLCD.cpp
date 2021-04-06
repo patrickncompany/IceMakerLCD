@@ -11,6 +11,10 @@ void showMenuInfo();
 void refreshDisplay();  // forward declares
 
 void hb_callback();
+void wt_callback();
+void rt_callback();
+
+void updateTime();
 
 /***************** Rotary Control Start ***********/
 #include <Button2.h>
@@ -60,15 +64,23 @@ int preOption = 0;
 int selOption = 0; //selected option INDEX (set on click)
 String currentTopTitle = page[curPage]; //glogal string for top title
 String currentMenuTitle = menu[curPage][curOption]; //glogal string for menu title
-String currentMenuInfo = "hb count";
+String currentMenuInfo = "wait time";
 String selectedOption; //global string for clicked option
 /***************** Menu End ***********/
 
 /***************** Timer Start ********************/
 #include <Ticker.h>
-uint32_t hb_interval = 1000*1*1; //millis * seconds * minutes - 1000*60*3=3minutes in millis
-uint32_t hb_remaining = 0;
+uint32_t hb_interval = 1000*1*1;
+uint32_t wt_interval = 2 * 60 * 60 * 1000;
+uint32_t rt_interval = 5000;
 Ticker hb_tick(hb_callback,hb_interval,0,MILLIS);
+Ticker waitTime(wt_callback,wt_interval,1,MILLIS);
+Ticker runTime(rt_callback,rt_interval,1,MILLIS);
+
+uint32_t milliseconds  = 1;
+uint32_t seconds  = 1000 * milliseconds;
+uint32_t minutes  = 60 * seconds;
+uint32_t hours = 60 * minutes;
 /***************** Timer End ********************/
 
 void setup() {
@@ -97,24 +109,55 @@ void setup() {
   delay(1000);
   display.clearDisplay();
 
-  hb_tick.start();
+  Serial.print("wt_interval : ");
+  Serial.println(wt_interval);
 
+
+  hb_tick.start();
+  waitTime.start();
+  runTime.start();
 }
 
 void loop() {
   //******************  Rotary Listen Loop Start ******************//
   r.loop();
   b.loop();
-  //******************  Rotary Listen Loop End ******************//
-
-  currentMenuInfo=String(hb_tick.counter());
+  //******************  Rotary Listen Loop End ******************//  
 
   hb_tick.update();
+  waitTime.update();
+  runTime.update();
+
+}
+
+void updateTime(){
+  uint32_t eTime = waitTime.elapsed();
+  uint32_t tTime = wt_interval;
+  uint32_t dTime = tTime - eTime;
+  uint32_t dHours = dTime / hours;
+  uint32_t dMinutes = (dTime % hours) / minutes;
+  uint32_t dSeconds = ((dTime % hours) % minutes) / seconds;
+
+  String sHours = String(dHours);
+  String sMinutes = String(dMinutes);
+  String sSeconds = String(dSeconds);
+  currentMenuInfo = sHours + ":" + sMinutes + ":" + sSeconds;
 
 }
 
 void hb_callback(){
   Serial.println("heartbeat");
+  updateTime();
+  refreshDisplay();
+}
+
+void wt_callback(){
+  Serial.println("waittime");
+  refreshDisplay();
+}
+
+void rt_callback(){
+  Serial.println("runtime");
   refreshDisplay();
 }
 
