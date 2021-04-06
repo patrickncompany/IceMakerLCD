@@ -71,7 +71,8 @@ String selectedOption; //global string for clicked option
 /***************** Timer Start ********************/
 #include <Ticker.h>
 uint32_t hb_interval = 1000*1*1;
-uint32_t wt_interval = 2 * 60 * 60 * 1000;
+uint32_t wt_interval = 10000;
+//uint32_t wt_interval = 2 * 60 * 60 * 1000;
 uint32_t rt_interval = 5000;
 Ticker hb_tick(hb_callback,hb_interval,0,MILLIS);
 Ticker waitTime(wt_callback,wt_interval,1,MILLIS);
@@ -81,6 +82,9 @@ uint32_t milliseconds  = 1;
 uint32_t seconds  = 1000 * milliseconds;
 uint32_t minutes  = 60 * seconds;
 uint32_t hours = 60 * minutes;
+
+bool wt_stop = false;
+bool wt_start = true;
 /***************** Timer End ********************/
 
 void setup() {
@@ -127,7 +131,6 @@ void loop() {
   hb_tick.update();
   waitTime.update();
   runTime.update();
-
 }
 
 void updateTime(){
@@ -137,12 +140,10 @@ void updateTime(){
   uint32_t dHours = dTime / hours;
   uint32_t dMinutes = (dTime % hours) / minutes;
   uint32_t dSeconds = ((dTime % hours) % minutes) / seconds;
-
   String sHours = String(dHours);
   String sMinutes = String(dMinutes);
   String sSeconds = String(dSeconds);
   currentMenuInfo = sHours + ":" + sMinutes + ":" + sSeconds;
-
 }
 
 void hb_callback(){
@@ -305,7 +306,7 @@ void click(Button2& btn) {
           break;
         case 1:
           // Reset timer to max time
-          Serial.println("Reset Wait Timer");
+          currentMenuInfo = "0000000000";
           goHome();
           break;
         case 2:
