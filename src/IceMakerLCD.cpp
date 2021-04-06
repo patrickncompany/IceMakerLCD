@@ -4,11 +4,13 @@ void updatePage();  // forward declares
 void updateOption();  // forward declares
 void showSelect();  // forward declares
 void updateTitle(String);  // forward declares
-void checkTime();  // forward declares
 void goHome();  // forward declares
 void showTopTitle();  // forward declares
 void showMenuTitle();  // forward declares
+void showMenuInfo();
 void refreshDisplay();  // forward declares
+
+void hb_callback();
 
 /***************** Rotary Control Start ***********/
 #include <Button2.h>
@@ -45,8 +47,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 /***************** Menu Start ***********/
 const int numPages=4;  //must be a const to use as array index
 const int numOptions=4; //must be a const to use as array index
-String page[numPages]={"Main Menu","Run Time","Timer","Status"};
-String menu[numPages][numOptions]={{"Run Time","Timer","Status","*****"},{"3 seconds","4 seconds","5 seconds","Back Home"},{"2 hours","+1 hour","-1 hour","Back Home"},{"Run Now","Next Run","Last Now","Back Home"}};
+String page[numPages]={"Main Menu","Run Time","Wait Time","Status"};
+String menu[numPages][numOptions]={{"Run Time","Wait Time","Status","Quick Run"},{"3 seconds","4 seconds","5 seconds","Back Home"},{"2 hours","+1 hour","-1 hour","Back Home"},{"Remaing","Reset Time","*****","Back Home"}};
 int maxPage = numPages-1; //max page INDEX
 int minPage = 0;  //min page INDEX
 int curPage = minPage; // current page INDEX
@@ -58,14 +60,15 @@ int preOption = 0;
 int selOption = 0; //selected option INDEX (set on click)
 String currentTopTitle = page[curPage]; //glogal string for top title
 String currentMenuTitle = menu[curPage][curOption]; //glogal string for menu title
+String currentMenuInfo = "hb count";
 String selectedOption; //global string for clicked option
 /***************** Menu End ***********/
 
 /***************** Timer Start ********************/
-#include <elapsedMillis.h>
-elapsedMillis sinceStart;
-int sinceFlag=0;
-unsigned long runTime=1000*60*10;// multiply ms*s*m (1000ms*60s*1m= 1 minute in milliseconds)
+#include <Ticker.h>
+uint32_t hb_interval = 1000*1*1; //millis * seconds * minutes - 1000*60*3=3minutes in millis
+uint32_t hb_remaining = 0;
+Ticker hb_tick(hb_callback,hb_interval,0,MILLIS);
 /***************** Timer End ********************/
 
 void setup() {
@@ -92,7 +95,9 @@ void setup() {
   // show lcd library splash
   display.display();
   delay(1000);
-  display.clearDisplay();  
+  display.clearDisplay();
+
+  hb_tick.start();
 
 }
 
@@ -102,17 +107,15 @@ void loop() {
   b.loop();
   //******************  Rotary Listen Loop End ******************//
 
-  checkTime();
+  currentMenuInfo=String(hb_tick.counter());
+
+  hb_tick.update();
+
 }
 
-void checkTime(){
-  if (sinceStart>runTime && sinceFlag){
-    // timed event occurs.
-    Serial.println("Time Elapsed");
-    // reset elapsed time.
-    sinceStart=0;
-    sinceFlag=0;
-  }
+void hb_callback(){
+  Serial.println("heartbeat");
+  refreshDisplay();
 }
 
 void goHome(){
@@ -125,7 +128,7 @@ void goHome(){
 }
 
 void showTopTitle(){
-  // top 24 pixels (yellow)
+  // top display (Yellow ?21 pixels)
   display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0,0);
@@ -133,17 +136,26 @@ void showTopTitle(){
 }
 
 void showMenuTitle(){
-  // first 12 pixels after top yellow bar
+  // first line after top yellow bar
   display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0,24);
+  display.setCursor(0,20);
   display.println(currentMenuTitle);
+}
+
+void showMenuInfo(){
+  // second line after top yello bar
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0,40);
+  display.println(currentMenuInfo);
 }
 
 void refreshDisplay(){
   display.clearDisplay();
   showTopTitle();
   showMenuTitle();
+  showMenuInfo();
   display.display();   
 }
 
@@ -154,9 +166,11 @@ void click(Button2& btn) {
   switch(curPage){
     // case for each page
     case 0:
+      // Main Menu
       switch(selOption){
         // case for each option
         case 0:
+          // Go to Run Time
           if(firstRun){refreshDisplay();break;} //consume boot click event
           curPage=1; // new page
           curOption = minpos;  //option array index 
@@ -166,6 +180,7 @@ void click(Button2& btn) {
           refreshDisplay();
           break;
         case 1:
+          // Go to Wait Time
           curPage=2; // new page
           curOption = minpos;  //option array index 
           curpos = minpos; //rotary position
@@ -174,6 +189,7 @@ void click(Button2& btn) {
           refreshDisplay();
           break;
         case 2:
+          // Go to Status
           curPage=3; // new page
           curOption = minpos;  //option array index 
           curpos = minpos; //rotary position
@@ -182,73 +198,79 @@ void click(Button2& btn) {
           refreshDisplay();
           break;
         case 3:
+          // Quick Run
+          goHome();
           break; 
       }
       Serial.print("Selected : ");Serial.println(selectedOption);
       break;
     case 1:
+      // Run Time
       switch(selOption){
         // case for each option
         case 0:
           // 3 seconds
-          //sinceFlag=1;
-          //sinceStart=0;
-          runTime=1000*2;
+          //runTime=1000*3;
           goHome();
           break;
         case 1:
          // 4 seconds
-          //sinceFlag=1;
-          //sinceStart=0;
-          runTime=1000*3;
+          //runTime=1000*4;
           goHome();       
           break;
         case 2:
          //5 seconds
-          //sinceFlag=1;
-          //sinceStart=0;
-          runTime=1000*4;
+          //runTime=1000*5;
           goHome();
           break;
         case 3:
+          // Go to Main Menu
           goHome();        
           break; 
       }
       Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 2:
+      // Wait Time
       switch(selOption){
         // case for each option
         case 0:
+          // 2 hours
           goHome();
           break;
         case 1:
+          // +1 hour
           goHome();
           break;
         case 2:
+          // -1 hour
           goHome();
           break;
         case 3:
+          // Go to Main Menu
           goHome();       
           break; 
       }
       Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 3:
+      // Status
       switch(selOption){
         // case for each option
         case 0:
-          // start timer
-          sinceFlag=1;
-          sinceStart=0;        
+          // Show time until next run
           break;
         case 1:
+          // Reset timer to max time
+          Serial.println("Reset Wait Timer");
           goHome();
           break;
         case 2:
+          // not assigned
           goHome();
           break;
         case 3:
+          // Go to Main Menu
           goHome();        
           break; 
       }
