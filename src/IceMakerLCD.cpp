@@ -1,21 +1,27 @@
 #include <Arduino.h>
 
-void updatePage();  // forward declares
-void updateOption();  // forward declares
-void showSelect();  // forward declares
-void updateTitle(String);  // forward declares
-void goHome();  // forward declares
-void showTopTitle();  // forward declares
-void showMenuTitle();  // forward declares
-void showMenuInfo();
-void refreshDisplay();  // forward declares
+/***************** Timer Start ********************/
+#include <arduino-timer.h>
+auto hbTimer = timer_create_default();
+uint32_t hb_interval = 1000;
+uint32_t wt_interval = 2*60*60*1000;
+uint32_t rt_interval = 5*1000;
 
-bool hb_callback(void *);
-void wt_callback();
-void rt_callback();
+uint32_t milliseconds  = 1;
+uint32_t seconds  = 1000 * milliseconds;
+uint32_t minutes  = 60 * seconds;
+uint32_t hours = 60 * minutes;
 
-void updateTime();
-void initTime();
+uint32_t eTime;
+uint32_t tTime;
+uint32_t dTime;
+uint32_t dHours;
+uint32_t dMinutes;
+uint32_t dSeconds;
+String sHours;
+String sMinutes;
+String sSeconds;
+/***************** Timer End ********************/
 
 /***************** Rotary Control Start ***********/
 #include <Button2.h>
@@ -29,9 +35,9 @@ Button2 b = Button2(BUTTON_PIN);
 int curpos;
 int minpos;
 int maxpos;
-void rotate(ESPRotary&);  // forward declares
-void showDirection(ESPRotary&);  // forward declares
-void click(Button2&);  // forward declares
+void rotate(ESPRotary&);  
+void showDirection(ESPRotary&);  
+void click(Button2&);  
 // debounce mcu boot single click event. use as flag to ignore first click event on boot.
 int firstRun=1;
 /***************** Rotary Control End ***************/
@@ -57,7 +63,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const int numPages=4;  //must be a const to use as array index
 const int numOptions=4; //must be a const to use as array index
 String page[numPages]={"Main Menu","Run Time","Wait Time","Status"};
-String menu[numPages][numOptions]={{"Run Time","Wait Time","Status","Quick Run"},{"3 seconds","4 seconds","5 seconds","Back Home"},{"2 hours","+1 hour","-1 hour","Back Home"},{"Remaing","Reset Time","*****","Back Home"}};
+String menu[numPages][numOptions]={{"Run Time","Wait Time","Status","Quick Run"},{"3 seconds","4 seconds","5 seconds","Back Home"},{"2 hours","+15 min","-15 min","Back Home"},{"Remaing","Reset Time","*****","Back Home"}};
 int maxPage = numPages-1; //max page INDEX
 int minPage = 0;  //min page INDEX
 int curPage = minPage; // current page INDEX
@@ -73,28 +79,23 @@ String currentMenuInfo = "wait time";
 String selectedOption; //global string for clicked option
 /***************** Menu End ***********/
 
-/***************** Timer Start ********************/
-#include <arduino-timer.h>
-auto hbTimer = timer_create_default();
-uint32_t hb_interval = 1000;
-uint32_t wt_interval = 2*60*60*1000;
-uint32_t rt_interval = 5*1000;
+void updatePage();  
+void updateOption();  
+void showSelect();  
+void updateTitle(String);  
+void goHome();  
+void showTopTitle();  
+void showMenuTitle();  
+void showMenuInfo();
+void refreshDisplay();  
 
-uint32_t milliseconds  = 1;
-uint32_t seconds  = 1000 * milliseconds;
-uint32_t minutes  = 60 * seconds;
-uint32_t hours = 60 * minutes;
+bool hb_callback(void *);
+void wt_callback();
+void rt_callback();
 
-uint32_t eTime;
-uint32_t tTime;
-uint32_t dTime;
-uint32_t dHours;
-uint32_t dMinutes;
-uint32_t dSeconds;
-String sHours;
-String sMinutes;
-String sSeconds;
-/***************** Timer End ********************/
+void updateTime();
+void initTime();
+void relayRun();
 
 void setup() {
   Serial.begin(115200);
@@ -146,6 +147,17 @@ void loop() {
 
 }
 
+void relayRun(){
+  Serial.print("Fill : ");Serial.println(rt_interval/1000);
+  currentMenuInfo="Fill : " + rt_interval/1000;
+  refreshDisplay();
+  digitalWrite(RELAY_PIN,HIGH);
+  delay(rt_interval);
+  digitalWrite(RELAY_PIN,LOW);
+  initTime();
+  updateTime();
+}
+
 void initTime(){
   //eTime = millis();
   tTime = millis() + wt_interval;  // add wait millis to elapsed millis
@@ -168,14 +180,15 @@ bool hb_callback(void *){
   updateTime();
     // if delta time (dTime) >= elapsed time (millis()) do something
     if (tTime<=millis()) {
-      Serial.println("DING!");
-      currentMenuInfo="Filling.";
-      refreshDisplay();
-      digitalWrite(RELAY_PIN,HIGH);
-      delay(rt_interval);
-      digitalWrite(RELAY_PIN,LOW);
-      initTime();
-      updateTime();
+      relayRun();
+      //Serial.println("DING!");
+      //currentMenuInfo="Filling.";
+      //refreshDisplay();
+      //digitalWrite(RELAY_PIN,HIGH);
+      //delay(rt_interval);
+      //digitalWrite(RELAY_PIN,LOW);
+      //initTime();
+      //updateTime();
     }
   refreshDisplay();
   return true;
@@ -272,6 +285,10 @@ void click(Button2& btn) {
           break;
         case 3:
           // Quick Run
+          currentMenuInfo="Run Now";
+          refreshDisplay();
+          delay(5000);
+          relayRun();
           goHome();
           break; 
       }
@@ -283,18 +300,27 @@ void click(Button2& btn) {
         // case for each option
         case 0:
           // 3 seconds
-          //runTime=1000*3;
-          goHome();
+          rt_interval=1000*3;
+          currentMenuInfo = "Run 3s";
+          refreshDisplay();          
+          delay(500); //locking
+          //goHome();
           break;
         case 1:
          // 4 seconds
-          //runTime=1000*4;
-          goHome();       
+          rt_interval=1000*4;
+          currentMenuInfo = "Run 4s";
+          refreshDisplay();          
+          delay(500); //locking
+          //goHome();       
           break;
         case 2:
          //5 seconds
-          //runTime=1000*5;
-          goHome();
+          rt_interval=1000*5;
+          currentMenuInfo = "Run 5s";
+          refreshDisplay();
+          delay(500); //locking
+          //goHome();
           break;
         case 3:
           // Go to Main Menu
@@ -309,15 +335,34 @@ void click(Button2& btn) {
         // case for each option
         case 0:
           // 2 hours
-          goHome();
+          wt_interval = 2*60*60*1000;
+          currentMenuInfo = "Set 2h";
+          refreshDisplay();
+          delay(500); //locking
+          initTime();
+          updateTime();
+          //goHome();
           break;
         case 1:
-          // +1 hour
-          goHome();
+          // +15 min
+          wt_interval = wt_interval + (15*60*1000);
+          currentMenuInfo = "Plus 15m";
+          refreshDisplay();
+          delay(500); //locking
+          initTime();
+          updateTime();
+          //goHome();
           break;
         case 2:
-          // -1 hour
-          goHome();
+          // -15 min
+          wt_interval = wt_interval - (15*60*1000);
+          if (wt_interval<=0) wt_interval=(1*60*60*1000);
+          currentMenuInfo = "Minus 15m";
+          refreshDisplay();
+          delay(500); //locking
+          initTime();
+          updateTime();
+          //goHome();
           break;
         case 3:
           // Go to Main Menu
