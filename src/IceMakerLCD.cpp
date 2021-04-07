@@ -10,7 +10,7 @@ void showMenuTitle();  // forward declares
 void showMenuInfo();
 void refreshDisplay();  // forward declares
 
-void hb_callback();
+bool hb_callback(void *);
 void wt_callback();
 void rt_callback();
 
@@ -73,22 +73,16 @@ String selectedOption; //global string for clicked option
 /***************** Menu End ***********/
 
 /***************** Timer Start ********************/
-#include <Ticker.h>
-uint32_t hb_interval = 1000*1*1;
-uint32_t wt_interval = 10000;
-//uint32_t wt_interval = 2 * 60 * 60 * 1000;
-uint32_t rt_interval = 5000;
-Ticker hb_tick(hb_callback,hb_interval,0,MILLIS);
-Ticker waitTime(wt_callback,wt_interval,1,MILLIS);
-Ticker runTime(rt_callback,rt_interval,1,MILLIS);
+#include <arduino-timer.h>
+auto hbTimer = timer_create_default();
+uint32_t hb_interval = 1000;
+uint32_t wt_interval = 2*60*60*1000;
+uint32_t rt_interval = 5*1000;
 
 uint32_t milliseconds  = 1;
 uint32_t seconds  = 1000 * milliseconds;
 uint32_t minutes  = 60 * seconds;
 uint32_t hours = 60 * minutes;
-
-bool wt_stop = false;
-bool wt_start = true;
 /***************** Timer End ********************/
 
 void setup() {
@@ -113,8 +107,8 @@ void setup() {
   //******************  Rotary Setup End  ******************//
 
   //******************  Relay Setup Start  ******************//
-  pinMode(RELAY_PIN,OUTPUT);
-  digitalWrite(RELAY_PIN,LOW);
+  //pinMode(RELAY_PIN,OUTPUT);
+  //digitalWrite(RELAY_PIN,LOW);
   //******************  Relay Setup End  ******************//
 
   // show lcd library splash
@@ -122,13 +116,8 @@ void setup() {
   delay(1000);
   display.clearDisplay();
 
-  Serial.print("wt_interval : ");
-  Serial.println(wt_interval);
+  hbTimer.every(hb_interval,hb_callback);
 
-
-  hb_tick.start();
-  waitTime.start();
-  runTime.start();
 }
 
 void loop() {
@@ -137,13 +126,12 @@ void loop() {
   b.loop();
   //******************  Rotary Listen Loop End ******************//  
 
-  hb_tick.update();
-  waitTime.update();
-  runTime.update();
+  hbTimer.tick();
+
 }
 
 void updateTime(){
-  uint32_t eTime = waitTime.elapsed();
+  uint32_t eTime = millis();
   uint32_t tTime = wt_interval;
   uint32_t dTime = tTime - eTime;
   uint32_t dHours = dTime / hours;
@@ -155,10 +143,11 @@ void updateTime(){
   currentMenuInfo = sHours + ":" + sMinutes + ":" + sSeconds;
 }
 
-void hb_callback(){
+bool hb_callback(void *){
   Serial.println("heartbeat");
   updateTime();
   refreshDisplay();
+  return true;
 }
 
 void wt_callback(){
