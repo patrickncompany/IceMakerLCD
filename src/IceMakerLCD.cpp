@@ -48,6 +48,10 @@ int firstRun=1;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 /***************** LCD End ***********/
 
+/***************** Relay Start ***********/
+#define RELAY_PIN D4
+/***************** Relay End ***********/
+
 /***************** Menu Start ***********/
 const int numPages=4;  //must be a const to use as array index
 const int numOptions=4; //must be a const to use as array index
@@ -106,7 +110,12 @@ void setup() {
   minpos=0;
   maxpos=numOptions-1;
   curpos=0;
-  //******************  Rotary Setup End  ******************// 
+  //******************  Rotary Setup End  ******************//
+
+  //******************  Relay Setup Start  ******************//
+  pinMode(RELAY_PIN,OUTPUT);
+  digitalWrite(RELAY_PIN,LOW);
+  //******************  Relay Setup End  ******************//
 
   // show lcd library splash
   display.display();
