@@ -5,7 +5,7 @@
 auto hbTimer = timer_create_default();
 uint32_t hb_interval = 1000;
 uint32_t wt_interval = 2*60*60*1000;
-uint32_t rt_interval = 5*1000;
+uint32_t rt_interval = 4*1000; // set interval to 1s less for accuracy.
 
 uint32_t milliseconds  = 1;
 uint32_t seconds  = 1000 * milliseconds;
@@ -148,8 +148,11 @@ void loop() {
 }
 
 void relayRun(){
-  Serial.print("Fill : ");Serial.println(rt_interval/1000);
-  currentMenuInfo="Fill : " + rt_interval/1000;
+  int rInterval = (rt_interval/1000)+1; // run value is always 1s less than real world
+  String rNotice = String(rInterval);
+  rNotice = "Fill: "+rNotice+"s";
+  Serial.println(rNotice);
+  currentMenuInfo=rNotice;
   refreshDisplay();
   digitalWrite(RELAY_PIN,HIGH);
   delay(rt_interval);
@@ -176,7 +179,7 @@ void updateTime(){
 }
 
 bool hb_callback(void *){
-  Serial.println("heartbeat");
+  //Serial.println("heartbeat");
   updateTime();
     // if delta time (dTime) >= elapsed time (millis()) do something
     if (tTime<=millis()) {
@@ -299,8 +302,8 @@ void click(Button2& btn) {
       switch(selOption){
         // case for each option
         case 0:
-          // 3 seconds
-          rt_interval=1000*3;
+          // 3 seconds 
+          rt_interval=1000*2;// set interval to 1 less due to overhead
           currentMenuInfo = "Run 3s";
           refreshDisplay();          
           delay(500); //locking
@@ -308,7 +311,7 @@ void click(Button2& btn) {
           break;
         case 1:
          // 4 seconds
-          rt_interval=1000*4;
+          rt_interval=1000*3;// set interval to 1 less due to overhead
           currentMenuInfo = "Run 4s";
           refreshDisplay();          
           delay(500); //locking
@@ -316,7 +319,7 @@ void click(Button2& btn) {
           break;
         case 2:
          //5 seconds
-          rt_interval=1000*5;
+          rt_interval=1000*4;// set interval to 1 less due to overhead
           currentMenuInfo = "Run 5s";
           refreshDisplay();
           delay(500); //locking
@@ -341,7 +344,7 @@ void click(Button2& btn) {
           delay(500); //locking
           initTime();
           updateTime();
-          //goHome();
+          goHome();
           break;
         case 1:
           // +15 min
