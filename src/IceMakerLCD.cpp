@@ -18,9 +18,12 @@ uint32_t dTime;
 uint32_t dHours;
 uint32_t dMinutes;
 uint32_t dSeconds;
+
 String sHours;
 String sMinutes;
 String sSeconds;
+String hmsTime;
+
 /***************** Timer End ********************/
 
 /***************** Rotary Control Start ***********/
@@ -97,6 +100,10 @@ void updateTime();
 void initTime();
 void relayRun();
 
+void goMenu(int);
+
+String mstohms(int32_t);
+
 void setup() {
   Serial.begin(115200);
 
@@ -150,8 +157,8 @@ void loop() {
 void relayRun(){
   int rInterval = (rt_interval/1000)+1; // run value is always 1s less than real world
   String rNotice = String(rInterval);
-  rNotice = "Fill: "+rNotice+"s";
-  Serial.println(rNotice);
+  rNotice = "Fill: " + rNotice + "s";
+  Serial.print(mstohms(millis()));Serial.print(" - ");Serial.println(rNotice);
   currentMenuInfo=rNotice;
   refreshDisplay();
   digitalWrite(RELAY_PIN,HIGH);
@@ -166,6 +173,21 @@ void initTime(){
   tTime = millis() + wt_interval;  // add wait millis to elapsed millis
 }
 
+String mstohms(int32_t msvalue){
+  dTime = msvalue;
+  dHours = dTime / hours;
+  dMinutes = (dTime % hours) / minutes;
+  dSeconds = ((dTime % hours) % minutes) / seconds;
+  sHours = String(dHours);
+  sMinutes = String(dMinutes);
+  sSeconds = String(dSeconds);
+  if (sHours.length()<2) sHours = "0" + sHours;
+  if (sMinutes.length()<2) sMinutes = "0" + sMinutes;
+  if (sSeconds.length()<2) sSeconds = "0" + sSeconds;
+  hmsTime = sHours + ":" + sMinutes + ":" + sSeconds;
+  return hmsTime;
+}
+
 void updateTime(){
   //eTime = millis();
   dTime = tTime - millis();
@@ -175,23 +197,18 @@ void updateTime(){
   sHours = String(dHours);
   sMinutes = String(dMinutes);
   sSeconds = String(dSeconds);
+  if (sHours.length()<2) sHours = "0" + sHours;
+  if (sMinutes.length()<2) sMinutes = "0" + sMinutes;
+  if (sSeconds.length()<2) sSeconds = "0" + sSeconds;  
   currentMenuInfo = sHours + ":" + sMinutes + ":" + sSeconds;
 }
 
 bool hb_callback(void *){
   //Serial.println("heartbeat");
   updateTime();
-    // if delta time (dTime) >= elapsed time (millis()) do something
+    // if wait time elapsed do something
     if (tTime<=millis()) {
       relayRun();
-      //Serial.println("DING!");
-      //currentMenuInfo="Filling.";
-      //refreshDisplay();
-      //digitalWrite(RELAY_PIN,HIGH);
-      //delay(rt_interval);
-      //digitalWrite(RELAY_PIN,LOW);
-      //initTime();
-      //updateTime();
     }
   refreshDisplay();
   return true;
@@ -209,6 +226,15 @@ void rt_callback(){
 
 void goHome(){
   curPage=0; // new page
+  curOption = minpos;  //option array index 
+  curpos = minpos; //rotary position
+  currentTopTitle = page[curPage];
+  currentMenuTitle = menu[curPage][curOption];
+  refreshDisplay();   
+}
+
+void goMenu(int cp){
+  curPage=cp; // new page
   curOption = minpos;  //option array index 
   curpos = minpos; //rotary position
   currentTopTitle = page[curPage];
@@ -295,7 +321,7 @@ void click(Button2& btn) {
           goHome();
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption);
+      //Serial.print("Selected : ");Serial.println(selectedOption);
       break;
     case 1:
       // Run Time
@@ -307,7 +333,7 @@ void click(Button2& btn) {
           currentMenuInfo = "Run 3s";
           refreshDisplay();          
           delay(500); //locking
-          //goHome();
+          goHome();
           break;
         case 1:
          // 4 seconds
@@ -315,7 +341,7 @@ void click(Button2& btn) {
           currentMenuInfo = "Run 4s";
           refreshDisplay();          
           delay(500); //locking
-          //goHome();       
+          goHome();       
           break;
         case 2:
          //5 seconds
@@ -323,14 +349,14 @@ void click(Button2& btn) {
           currentMenuInfo = "Run 5s";
           refreshDisplay();
           delay(500); //locking
-          //goHome();
+          goHome();
           break;
         case 3:
           // Go to Main Menu
           goHome();        
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption);   
+      //Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 2:
       // Wait Time
@@ -372,7 +398,7 @@ void click(Button2& btn) {
           goHome();       
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption);   
+      //Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 3:
       // Status
@@ -397,7 +423,7 @@ void click(Button2& btn) {
           goHome();        
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption); 
+      //Serial.print("Selected : ");Serial.println(selectedOption); 
       break;
   }
 
