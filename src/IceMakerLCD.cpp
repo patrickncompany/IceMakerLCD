@@ -15,6 +15,7 @@ void wt_callback();
 void rt_callback();
 
 void updateTime();
+void initTime();
 
 /***************** Rotary Control Start ***********/
 #include <Button2.h>
@@ -49,7 +50,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 /***************** LCD End ***********/
 
 /***************** Relay Start ***********/
-#define RELAY_PIN D4
+#define RELAY_PIN D8
 /***************** Relay End ***********/
 
 /***************** Menu Start ***********/
@@ -83,6 +84,16 @@ uint32_t milliseconds  = 1;
 uint32_t seconds  = 1000 * milliseconds;
 uint32_t minutes  = 60 * seconds;
 uint32_t hours = 60 * minutes;
+
+uint32_t eTime;
+uint32_t tTime;
+uint32_t dTime;
+uint32_t dHours;
+uint32_t dMinutes;
+uint32_t dSeconds;
+String sHours;
+String sMinutes;
+String sSeconds;
 /***************** Timer End ********************/
 
 void setup() {
@@ -107,8 +118,8 @@ void setup() {
   //******************  Rotary Setup End  ******************//
 
   //******************  Relay Setup Start  ******************//
-  //pinMode(RELAY_PIN,OUTPUT);
-  //digitalWrite(RELAY_PIN,LOW);
+  pinMode(RELAY_PIN,OUTPUT);
+  digitalWrite(RELAY_PIN,LOW);
   //******************  Relay Setup End  ******************//
 
   // show lcd library splash
@@ -116,6 +127,11 @@ void setup() {
   delay(1000);
   display.clearDisplay();
 
+
+  // init timer values before starting heartbeat timer.
+  // heartbeat timer callback updates display ever second.
+  // heartbeat timer callback updates wait timer values.
+  initTime();
   hbTimer.every(hb_interval,hb_callback);
 
 }
@@ -130,22 +146,37 @@ void loop() {
 
 }
 
+void initTime(){
+  //eTime = millis();
+  tTime = millis() + wt_interval;  // add wait millis to elapsed millis
+}
+
 void updateTime(){
-  uint32_t eTime = millis();
-  uint32_t tTime = wt_interval;
-  uint32_t dTime = tTime - eTime;
-  uint32_t dHours = dTime / hours;
-  uint32_t dMinutes = (dTime % hours) / minutes;
-  uint32_t dSeconds = ((dTime % hours) % minutes) / seconds;
-  String sHours = String(dHours);
-  String sMinutes = String(dMinutes);
-  String sSeconds = String(dSeconds);
+  //eTime = millis();
+  dTime = tTime - millis();
+  dHours = dTime / hours;
+  dMinutes = (dTime % hours) / minutes;
+  dSeconds = ((dTime % hours) % minutes) / seconds;
+  sHours = String(dHours);
+  sMinutes = String(dMinutes);
+  sSeconds = String(dSeconds);
   currentMenuInfo = sHours + ":" + sMinutes + ":" + sSeconds;
 }
 
 bool hb_callback(void *){
   Serial.println("heartbeat");
   updateTime();
+    // if delta time (dTime) >= elapsed time (millis()) do something
+    if (tTime<=millis()) {
+      Serial.println("DING!");
+      currentMenuInfo="Filling.";
+      refreshDisplay();
+      digitalWrite(RELAY_PIN,HIGH);
+      delay(rt_interval);
+      digitalWrite(RELAY_PIN,LOW);
+      initTime();
+      updateTime();
+    }
   refreshDisplay();
   return true;
 }
@@ -305,6 +336,8 @@ void click(Button2& btn) {
         case 1:
           // Reset timer to max time
           currentMenuInfo = "0000000000";
+          initTime();
+          updateTime();
           goHome();
           break;
         case 2:
