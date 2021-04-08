@@ -64,22 +64,28 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 /***************** Menu Start ***********/
 const int numPages=4;  //must be a const to use as array index
-const int numOptions=4; //must be a const to use as array index
-String page[numPages]={"Main Menu","Run Time","Wait Time","Status"};
-String menu[numPages][numOptions]={{"Run Time","Wait Time","Status","Quick Run"},{"3 seconds","4 seconds","5 seconds","Back Home"},{"2 hours","+15 min","-15 min","Back Home"},{"Remaing","Reset Time","*****","Back Home"}};
-int maxPage = numPages-1; //max page INDEX
-int minPage = 0;  //min page INDEX
+const int numOptions=8; //must be a const to use as array index
+String page[numPages]={"Main Menu","Run Menu","Wait Menu","Status"};
+String menu[numPages][numOptions]={
+  {"Run Time","Wait Time","Status","Quick Run","","","",""},
+  {"3s","4s","5s","Back","","","",""},
+  {"2h","+15m","-15m","Back","","","",""},
+  {"Reset Wait","*****","*****","Back","","","",""}
+  };
+
+int maxPage = numPages-1; // max page INDEX
+int minPage = 0;  // min page INDEX
 int curPage = minPage; // current page INDEX
 int prePage = 0;
-int maxOption = numOptions-1; //max option INDEX
-int minOption = 0;  //min option index
-int curOption = minOption;  //current menu index
+int maxOption = numOptions-1; // max option INDEX
+int minOption = 0;  // min option index
+int curOption = minOption;  // current menu index
 int preOption = 0;
-int selOption = 0; //selected option INDEX (set on click)
-String currentTopTitle = page[curPage]; //glogal string for top title
-String currentMenuTitle = menu[curPage][curOption]; //glogal string for menu title
+int selOption = 0; // selected option INDEX (set on click)
+String currentTopTitle = page[curPage]; // glogal string for top title
+String currentMenuTitle = menu[curPage][curOption]; // glogal string for menu title
 String currentMenuInfo = "wait time";
-String selectedOption; //global string for clicked option
+String selectedOption; // global string for clicked option
 /***************** Menu End ***********/
 
 void updatePage();  
@@ -142,6 +148,9 @@ void setup() {
   initTime();
   hbTimer.every(hb_interval,hb_callback);
 
+  //debug output
+  Serial.println(menu[curPage][curOption]);
+
 }
 
 void loop() {
@@ -158,12 +167,13 @@ void relayRun(){
   int rInterval = (rt_interval/1000)+1; // run value is always 1s less than real world
   String rNotice = String(rInterval);
   rNotice = "Fill: " + rNotice + "s";
-  Serial.print(mstohms(millis()));Serial.print(" - ");Serial.println(rNotice);
+  Serial.print(mstohms(millis()));Serial.print(" - Start ");Serial.println(rNotice);
   currentMenuInfo=rNotice;
   refreshDisplay();
   digitalWrite(RELAY_PIN,HIGH);
   delay(rt_interval);
   digitalWrite(RELAY_PIN,LOW);
+  Serial.print(mstohms(millis()));Serial.print(" - End ");Serial.println(rNotice);
   initTime();
   updateTime();
 }
@@ -405,14 +415,14 @@ void click(Button2& btn) {
       switch(selOption){
         // case for each option
         case 0:
-          // Show time until next run
-          break;
-        case 1:
           // Reset timer to max time
           currentMenuInfo = "0000000000";
           initTime();
           updateTime();
           goHome();
+          break;
+        case 1:
+          // not assigned
           break;
         case 2:
           // not assigned
@@ -437,11 +447,30 @@ void showDirection(ESPRotary& r) {
   } else {
     curpos--;
   }
+  
+  // limit menu position with min/max; filter blanks
+
+  // maxpos is always upper index of array
+  // NOT 
+  // index of last valid option in array.
+
+  // IE: {"option1","option2","",""}
+  // Above menu has 2 options(index 0,1). maxpos = max index = 3.
+  // maxpos references invalid option. can NOT use.  
+
+  // Full menu array {"option1","option2","option3","option4"}
+  // Above menu has 4 options(index 0,1,2,3). maxpos = max index = 3.
+  // maxpos references valid option. can use.
 
   if (curpos>maxpos){
-    curpos=minpos; // wrap to start
+    // >maxpos only true for full array
+    curpos=maxpos;  // maxpos only valid for full array
   } else if (curpos<minpos){
-    curpos=maxpos; // wrap to end
+    // All menus have index 0 (minpos)
+    curpos=minpos;
+  } else if (menu[curPage][curpos]==""){
+    // empty option decrement pos
+    curpos--;
   }
 
   curOption = curpos; //current option index
