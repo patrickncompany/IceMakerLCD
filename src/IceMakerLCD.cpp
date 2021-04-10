@@ -60,6 +60,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 /***************** Relay Start ***********/
 #define RELAY_PIN D8
+bool manualSTOP = false;
 /***************** Relay End ***********/
 
 /***************** Menu Start ***********/
@@ -67,7 +68,7 @@ const int numPages=4;  //must be a const to use as array index
 const int numOptions=8; //must be a const to use as array index
 String page[numPages]={"Main Menu","Run Menu","Wait Menu","Status"};
 String menu[numPages][numOptions]={
-  {"Run Time","Wait Time","Status","Quick Run","","","",""},
+  {"Run Time","Wait Time","Status","Quick Run","!! STOP !!","Restart","",""},
   {"3s","4s","5s","Back","","","",""},
   {"2h","+15m","-15m","Back","","","",""},
   {"Reset Wait","*****","*****","Back","","","",""}
@@ -105,6 +106,7 @@ void rt_callback();
 void updateTime();
 void initTime();
 void relayRun();
+void relayStop();
 
 void goMenu(int);
 
@@ -163,6 +165,17 @@ void loop() {
 
 }
 
+void relayStop(){
+  digitalWrite(RELAY_PIN,LOW);
+  manualSTOP = true;
+  currentMenuInfo="STOPPED";
+  currentMenuTitle="Run = 0s";
+  currentMenuInfo="00:00:00";
+  refreshDisplay();
+  wt_interval = 3*24*60*60*1000; // three days
+  rt_interval = 0;
+}
+
 void relayRun(){
   int rInterval = (rt_interval/1000)+1; // run value is always 1s less than real world
   String rNotice = String(rInterval);
@@ -215,12 +228,15 @@ void updateTime(){
 
 bool hb_callback(void *){
   //Serial.println("heartbeat");
-  updateTime();
+  if (manualSTOP) {
+    Serial.println("manualSTOP");    
+  } else {
+    updateTime();
     // if wait time elapsed do something
-    if (tTime<=millis()) {
-      relayRun();
-    }
-  refreshDisplay();
+    if (tTime<=millis()) { relayRun(); }
+    refreshDisplay();
+  }
+
   return true;
 }
 
@@ -329,9 +345,21 @@ void click(Button2& btn) {
           delay(5000);
           relayRun();
           goHome();
+          break;
+        case 4:
+          // Stop All
+          relayStop();
+          break; 
+        case 5:
+          // restart
+          manualSTOP = false;
+          wt_interval = 2*60*60*1000;
+          rt_interval = 4*1000;
+          initTime();  // prevents instant relay run bug.
+          goHome();
           break; 
       }
-      //Serial.print("Selected : ");Serial.println(selectedOption);
+      Serial.print("Selected : ");Serial.println(selectedOption);
       break;
     case 1:
       // Run Time
@@ -366,7 +394,7 @@ void click(Button2& btn) {
           goHome();        
           break; 
       }
-      //Serial.print("Selected : ");Serial.println(selectedOption);   
+      Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 2:
       // Wait Time
@@ -408,7 +436,7 @@ void click(Button2& btn) {
           goHome();       
           break; 
       }
-      //Serial.print("Selected : ");Serial.println(selectedOption);   
+      Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 3:
       // Status
@@ -433,7 +461,7 @@ void click(Button2& btn) {
           goHome();        
           break; 
       }
-      //Serial.print("Selected : ");Serial.println(selectedOption); 
+      Serial.print("Selected : ");Serial.println(selectedOption); 
       break;
   }
 
