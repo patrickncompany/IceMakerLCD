@@ -152,7 +152,6 @@ void setup() {
 
   //debug output
   Serial.println(menu[curPage][curOption]);
-
 }
 
 void loop() {
@@ -229,7 +228,7 @@ void updateTime(){
 bool hb_callback(void *){
   //Serial.println("heartbeat");
   if (manualSTOP) {
-    Serial.println("manualSTOP");    
+    //Serial.println("manualSTOP");    
   } else {
     updateTime();
     // if wait time elapsed do something
@@ -359,7 +358,7 @@ void click(Button2& btn) {
           goHome();
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption);
+      //Serial.print("Selected : ");Serial.println(selectedOption);
       break;
     case 1:
       // Run Time
@@ -394,7 +393,7 @@ void click(Button2& btn) {
           goHome();        
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption);   
+      //Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 2:
       // Wait Time
@@ -436,7 +435,7 @@ void click(Button2& btn) {
           goHome();       
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption);   
+      //Serial.print("Selected : ");Serial.println(selectedOption);   
       break;
     case 3:
       // Status
@@ -461,7 +460,7 @@ void click(Button2& btn) {
           goHome();        
           break; 
       }
-      Serial.print("Selected : ");Serial.println(selectedOption); 
+      //Serial.print("Selected : ");Serial.println(selectedOption); 
       break;
   }
 
