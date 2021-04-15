@@ -29,9 +29,9 @@ String hmsTime;
 /***************** Rotary Control Start ***********/
 #include <Button2.h>
 #include <ESPRotary.h>
-#define ROTARY_PIN1 D5
-#define ROTARY_PIN2 D6
-#define BUTTON_PIN  D7
+#define ROTARY_PIN1 12
+#define ROTARY_PIN2 13
+#define BUTTON_PIN  14
 #define CLICKS_PER_STEP   4   // this number depends on your rotary encoder 
 ESPRotary r = ESPRotary(ROTARY_PIN1, ROTARY_PIN2, CLICKS_PER_STEP);
 Button2 b = Button2(BUTTON_PIN);
@@ -59,7 +59,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 /***************** LCD End ***********/
 
 /***************** Relay Start ***********/
-#define RELAY_PIN D8
+#define RELAY_PIN 15
 bool manualSTOP = false;
 /***************** Relay End ***********/
 
