@@ -6,6 +6,7 @@ auto hbTimer = timer_create_default();
 uint32_t hb_interval = 1000;
 uint32_t wt_interval = 2*60*60*1000;
 uint32_t rt_interval = 4*1000; // set interval to 1s less for accuracy.
+uint32_t in_interval = 5*1000; // consider end of input cycle interval.
 
 uint32_t milliseconds  = 1;
 uint32_t seconds  = 1000 * milliseconds;
@@ -14,6 +15,7 @@ uint32_t hours = 60 * minutes;
 
 uint32_t eTime;
 uint32_t tTime;
+uint32_t tInputTime;
 uint32_t dTime;
 uint32_t dHours;
 uint32_t dMinutes;
@@ -192,7 +194,8 @@ void relayRun(){
 
 void initTime(){
   //eTime = millis();
-  tTime = millis() + wt_interval;  // add wait millis to elapsed millis
+  tTime = millis() + wt_interval;  // add wait millis to elapsed millis (reset wait)
+  tInputTime = millis() + in_interval;  // add input wait millis to elapsed millis (reset input wait)
 }
 
 String mstohms(int32_t msvalue){
@@ -233,6 +236,12 @@ bool hb_callback(void *){
     updateTime();
     // if wait time elapsed do something
     if (tTime<=millis()) { relayRun(); }
+    
+    // if no input delay reached - show info
+    if (tInputTime<=millis()) {
+      currentTopTitle="Cycle In";
+      currentMenuTitle="";
+    }
     refreshDisplay();
   }
 
@@ -505,6 +514,8 @@ void showDirection(ESPRotary& r) {
   currentMenuTitle = menu[curPage][curOption];
 
   refreshDisplay(); 
+
+  tInputTime = millis() + in_interval;  // add input wait millis to elapsed millis (reset input wait)
   
   if (firstRun){firstRun=0;} // consume first click event.
   Serial.print("Menu Item : ");Serial.println(curpos);
