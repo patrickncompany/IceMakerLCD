@@ -116,6 +116,7 @@ String mstohms(int32_t);
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("System Booted");
 
   //******************  LCD Setup Start ******************//
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
